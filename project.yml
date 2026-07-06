@@ -11,7 +11,7 @@ options:
 packages:
   linphonesw:
     url: https://gitlab.linphone.org/BC/public/linphone-sdk-swift-macos.git
-    from: 5.3.0
+    from: 5.4.0
 
 settings:
   base:
@@ -31,6 +31,8 @@ targets:
   DeveloperSoftPhone:
     type: application
     platform: macOS
+    scheme:
+      configVariants: []
     sources:
       - path: Sources
       - path: Resources
