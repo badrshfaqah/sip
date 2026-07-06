@@ -1,0 +1,15 @@
+/*
+  English localization scaffold.
+  The UI currently ships in Arabic (base language). To enable full English
+  support, map the Arabic UI strings to English here, e.g.:
+
+  "اسم المستخدم (Username)" = "Username";
+  "كلمة المرور" = "Password";
+  "عنوان السيرفر أو IP" = "Server address or IP";
+  "المنفذ (Port)" = "Port";
+  "اتصال" = "Call";
+  "إنهاء" = "Hang up";
+  "متصل" = "Registered";
+  "غير متصل" = "Unregistered";
+  "جاري التسجيل…" = "Registering…";
+*/

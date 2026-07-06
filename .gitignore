@@ -1,0 +1,22 @@
+# Xcode
+*.xcodeproj
+!*.xcodeproj/project.pbxproj
+xcuserdata/
+DerivedData/
+build/
+dist/
+*.dmg
+
+# SwiftPM
+.build/
+.swiftpm/
+Package.resolved
+
+# macOS
+.DS_Store
+
+# Signing secrets
+*.p12
+*.mobileprovision
+*.provisionprofile
+notarization.env
