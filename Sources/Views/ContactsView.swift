@@ -42,15 +42,37 @@ struct ContactsView: View {
     }
 
     private var toolbar: some View {
-        HStack(spacing: 12) {
-            TextField("بحث سريع…", text: $search)
-                .textFieldStyle(.roundedBorder)
-                .frame(maxWidth: 220)
+        VStack(spacing: 8) {
+            HStack(spacing: 8) {
+                TextField("بحث سريع…", text: $search)
+                    .textFieldStyle(.roundedBorder)
 
-            Toggle(isOn: $favoritesOnly) {
-                Label("المفضلة", systemImage: "star.fill")
+                Toggle(isOn: $favoritesOnly) {
+                    Image(systemName: "star.fill")
+                }
+                .toggleStyle(.button)
+                .help("المفضلة فقط")
+
+                Menu {
+                    Button("استيراد CSV…") { importCSV() }
+                    Button("تصدير CSV…") { exportCSV() }
+                        .disabled(appState.contacts.contacts.isEmpty)
+                } label: {
+                    Image(systemName: "ellipsis.circle")
+                }
+                .menuStyle(.borderlessButton)
+                .menuIndicator(.hidden)
+                .fixedSize()
+
+                Button {
+                    editingContact = nil
+                    showEditor = true
+                } label: {
+                    Image(systemName: "plus")
+                }
+                .keyboardShortcut("n")
+                .help("إضافة جهة اتصال")
             }
-            .toggleStyle(.button)
 
             if !appState.contacts.categories.isEmpty {
                 Picker("التصنيف", selection: $category) {
@@ -59,33 +81,9 @@ struct ContactsView: View {
                         Text(c).tag(String?.some(c))
                     }
                 }
-                .frame(maxWidth: 200)
             }
-
-            Spacer()
-
-            Button {
-                importCSV()
-            } label: {
-                Label("استيراد CSV", systemImage: "square.and.arrow.down")
-            }
-
-            Button {
-                exportCSV()
-            } label: {
-                Label("تصدير CSV", systemImage: "square.and.arrow.up")
-            }
-            .disabled(appState.contacts.contacts.isEmpty)
-
-            Button {
-                editingContact = nil
-                showEditor = true
-            } label: {
-                Label("إضافة", systemImage: "plus")
-            }
-            .keyboardShortcut("n")
         }
-        .padding(12)
+        .padding(10)
     }
 
     private func row(_ contact: Contact) -> some View {

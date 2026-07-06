@@ -7,18 +7,22 @@ struct DeveloperSoftPhoneApp: App {
     @StateObject private var appState = AppState()
 
     var body: some Scene {
+        // نافذة مدمجة صغيرة بحجم سماعة هاتف — تعمل بجانب البرامج الأخرى ولا تشغل الشاشة
         WindowGroup {
             RootView()
                 .environmentObject(appState)
                 .environment(\.layoutDirection, appState.layoutDirection)
                 .preferredColorScheme(appState.preferredColorScheme)
-                .frame(minWidth: 900, minHeight: 620)
+                .frame(minWidth: 360, idealWidth: 380, maxWidth: 480,
+                       minHeight: 560, idealHeight: 660, maxHeight: 860)
                 .onAppear {
                     appDelegate.appState = appState
                     appState.startup()
                 }
         }
-        .windowStyle(.automatic)
+        .windowStyle(.hiddenTitleBar)
+        .defaultSize(width: 380, height: 660)
+        .windowResizability(.contentSize)
         .commands {
             CommandGroup(replacing: .newItem) {}
         }
