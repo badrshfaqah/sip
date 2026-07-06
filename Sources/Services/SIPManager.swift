@@ -331,8 +331,11 @@ final class SIPManager: ObservableObject {
     /// إجراء مكالمة صادرة
     func call(number: String) {
         guard let core, !number.isEmpty else { return }
+        guard let address = core.interpretUrl(url: number) else {
+            log.log(.call, "تعذّر تفسير الرقم: \(number)", level: .error)
+            return
+        }
         do {
-            let address = try core.interpretUrl(url: number)
             let params = try core.createCallParams(call: nil)
             params.audioEnabled = true
             params.videoEnabled = false
@@ -408,8 +411,11 @@ final class SIPManager: ObservableObject {
     /// تحويل المكالمة إلى رقم آخر (Transfer)
     func transfer(to number: String) {
         guard let core, let call = currentCall, !number.isEmpty else { return }
+        guard let address = core.interpretUrl(url: number) else {
+            log.log(.call, "تعذّر تفسير رقم التحويل: \(number)", level: .error)
+            return
+        }
         do {
-            let address = try core.interpretUrl(url: number)
             try call.transferTo(referTo: address)
             log.log(.call, "تحويل المكالمة إلى \(number)")
         } catch {
@@ -432,18 +438,14 @@ final class SIPManager: ObservableObject {
     /// بدء / إيقاف تسجيل المكالمة
     func toggleRecording() {
         guard let call = currentCall else { return }
-        do {
-            if activeCall.isRecording {
-                call.stopRecording()
-                activeCall.isRecording = false
-                log.log(.call, "تم إيقاف تسجيل المكالمة")
-            } else {
-                try call.startRecording()
-                activeCall.isRecording = true
-                log.log(.call, "بدأ تسجيل المكالمة")
-            }
-        } catch {
-            log.log(.call, "فشل تسجيل المكالمة: \(error)", level: .error)
+        if activeCall.isRecording {
+            call.stopRecording()
+            activeCall.isRecording = false
+            log.log(.call, "تم إيقاف تسجيل المكالمة")
+        } else {
+            call.startRecording()
+            activeCall.isRecording = true
+            log.log(.call, "بدأ تسجيل المكالمة")
         }
     }
 
