@@ -36,7 +36,7 @@ struct CallHistoryView: View {
     }
 
     private var toolbar: some View {
-        HStack(spacing: 12) {
+        VStack(spacing: 8) {
             Picker("", selection: $filter) {
                 Text("الكل").tag(CallDirection?.none)
                 ForEach(CallDirection.allCases) { d in
@@ -44,29 +44,30 @@ struct CallHistoryView: View {
                 }
             }
             .pickerStyle(.segmented)
-            .frame(maxWidth: 340)
+            .labelsHidden()
 
-            TextField("بحث…", text: $search)
-                .textFieldStyle(.roundedBorder)
-                .frame(maxWidth: 220)
+            HStack(spacing: 8) {
+                TextField("بحث…", text: $search)
+                    .textFieldStyle(.roundedBorder)
 
-            Spacer()
+                Button {
+                    exportHistory()
+                } label: {
+                    Image(systemName: "square.and.arrow.up")
+                }
+                .disabled(appState.callHistory.records.isEmpty)
+                .help("تصدير السجل")
 
-            Button {
-                exportHistory()
-            } label: {
-                Label("تصدير", systemImage: "square.and.arrow.up")
+                Button(role: .destructive) {
+                    confirmClear = true
+                } label: {
+                    Image(systemName: "trash")
+                }
+                .disabled(appState.callHistory.records.isEmpty)
+                .help("حذف السجل")
             }
-            .disabled(appState.callHistory.records.isEmpty)
-
-            Button(role: .destructive) {
-                confirmClear = true
-            } label: {
-                Label("حذف السجل", systemImage: "trash")
-            }
-            .disabled(appState.callHistory.records.isEmpty)
         }
-        .padding(12)
+        .padding(10)
     }
 
     private func row(_ record: CallRecord) -> some View {

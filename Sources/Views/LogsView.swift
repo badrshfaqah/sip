@@ -52,7 +52,7 @@ struct LogsView: View {
     }
 
     private var toolbar: some View {
-        HStack(spacing: 12) {
+        VStack(spacing: 8) {
             Picker("", selection: $kind) {
                 Text("الكل").tag(LogKind?.none)
                 ForEach(LogKind.allCases) { k in
@@ -60,28 +60,33 @@ struct LogsView: View {
                 }
             }
             .pickerStyle(.segmented)
-            .frame(maxWidth: 380)
+            .labelsHidden()
 
-            Toggle("الأخطاء فقط", isOn: $errorsOnly)
-                .toggleStyle(.button)
+            HStack(spacing: 8) {
+                Toggle("الأخطاء فقط", isOn: $errorsOnly)
+                    .toggleStyle(.button)
+                    .controlSize(.small)
 
-            Spacer()
+                Spacer()
 
-            Button {
-                exportLogs()
-            } label: {
-                Label("تصدير Logs", systemImage: "square.and.arrow.up")
+                Button {
+                    exportLogs()
+                } label: {
+                    Image(systemName: "square.and.arrow.up")
+                }
+                .disabled(logStore.entries.isEmpty)
+                .help("تصدير Logs")
+
+                Button(role: .destructive) {
+                    logStore.clear()
+                } label: {
+                    Image(systemName: "trash")
+                }
+                .disabled(logStore.entries.isEmpty)
+                .help("مسح السجلات")
             }
-            .disabled(logStore.entries.isEmpty)
-
-            Button(role: .destructive) {
-                logStore.clear()
-            } label: {
-                Label("مسح السجلات", systemImage: "trash")
-            }
-            .disabled(logStore.entries.isEmpty)
         }
-        .padding(12)
+        .padding(10)
     }
 
     private func badgeColor(_ entry: LogEntry) -> Color {

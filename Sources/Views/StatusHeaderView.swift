@@ -1,41 +1,43 @@
 import SwiftUI
 
-/// رأس الحالة: حالة الاتصال، الامتداد، المستخدم، الشركة، السيرفر، وجودة الاتصال.
+/// رأس الحالة المدمج: حالة الاتصال، الامتداد، السيرفر، والتبديل بين الحسابات.
 struct StatusHeaderView: View {
     @EnvironmentObject var appState: AppState
 
     private var account: SIPAccount? { appState.accountStore.activeAccount }
 
     var body: some View {
-        HStack(spacing: 16) {
+        HStack(spacing: 10) {
             statusBadge
 
-            VStack(alignment: .leading, spacing: 2) {
-                HStack(spacing: 8) {
+            VStack(alignment: .leading, spacing: 1) {
+                HStack(spacing: 6) {
                     Text(account?.displayName.isEmpty == false ? account!.displayName : (account?.username ?? "—"))
-                        .font(.headline)
+                        .font(.system(size: 12.5, weight: .bold))
+                        .lineLimit(1)
                     if let username = account?.username, !username.isEmpty {
                         Text("امتداد \(username)")
-                            .font(.caption)
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 2)
-                            .background(Brand.primary.opacity(0.12))
+                            .font(.system(size: 9.5, weight: .semibold))
+                            .padding(.horizontal, 5)
+                            .padding(.vertical, 1.5)
+                            .background(Brand.secondary.opacity(0.13))
+                            .foregroundColor(Brand.secondary)
                             .clipShape(Capsule())
                     }
                 }
                 Text("\(Brand.companyName) · \(account?.server ?? "—")")
-                    .font(.caption)
+                    .font(.system(size: 10))
                     .foregroundColor(.secondary)
+                    .lineLimit(1)
             }
 
-            Spacer()
+            Spacer(minLength: 4)
 
-            if appState.sip.activeCall.state == .connected {
-                qualityIndicators
-            }
+            accountMenu
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 10)
+        .padding(.horizontal, 12)
+        .padding(.top, 26)   // مساحة لأزرار النافذة مع شريط العنوان المخفي
+        .padding(.bottom, 8)
         .background(.bar)
     }
 
@@ -43,38 +45,50 @@ struct StatusHeaderView: View {
         let (color, text): (Color, String) = {
             switch appState.sip.registrationStatus {
             case .registered:   return (Brand.success, "متصل")
-            case .registering:  return (Brand.warning, "جاري التسجيل…")
+            case .registering:  return (Brand.warning, "التسجيل…")
             case .unregistered: return (.gray, "غير متصل")
             case .failed:       return (Brand.danger, "خطأ")
             }
         }()
-        return HStack(spacing: 6) {
-            Circle().fill(color).frame(width: 10, height: 10)
-            Text(text).font(.subheadline.weight(.medium))
+        return HStack(spacing: 5) {
+            Circle().fill(color).frame(width: 8, height: 8)
+            Text(text).font(.system(size: 11, weight: .semibold))
         }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 5)
+        .padding(.horizontal, 8)
+        .padding(.vertical, 4)
         .background(color.opacity(0.12))
         .clipShape(Capsule())
         .help(appState.sip.registrationStatus.displayName)
     }
 
-    /// مؤشرات جودة الاتصال: Ping وPacket Loss وJitter وLatency
-    private var qualityIndicators: some View {
-        let q = appState.sip.activeCall.quality
-        return HStack(spacing: 14) {
-            qualityItem(label: "Ping", value: String(format: "%.0f ms", q.pingMs))
-            qualityItem(label: "فقد الحزم", value: String(format: "%.1f%%", q.packetLossPercent))
-            qualityItem(label: "Jitter", value: String(format: "%.0f ms", q.jitterMs))
-            qualityItem(label: "Latency", value: String(format: "%.0f ms", q.latencyMs))
+    /// قائمة التبديل بين الحسابات وإدارتها
+    private var accountMenu: some View {
+        Menu {
+            ForEach(appState.accountStore.accounts) { acc in
+                Button {
+                    appState.switchTo(account: acc)
+                } label: {
+                    if acc.id == appState.accountStore.activeAccountID {
+                        Label(title(acc), systemImage: "checkmark")
+                    } else {
+                        Text(title(acc))
+                    }
+                }
+            }
+            Divider()
+            Button("إدارة الحسابات…") { appState.showLogin = true }
+        } label: {
+            Image(systemName: "person.crop.circle")
+                .font(.system(size: 16))
+                .foregroundColor(.secondary)
         }
-        .font(.caption.monospacedDigit())
+        .menuStyle(.borderlessButton)
+        .menuIndicator(.hidden)
+        .fixedSize()
+        .help("التبديل بين الحسابات")
     }
 
-    private func qualityItem(label: String, value: String) -> some View {
-        VStack(spacing: 1) {
-            Text(value).fontWeight(.semibold)
-            Text(label).foregroundColor(.secondary)
-        }
+    private func title(_ acc: SIPAccount) -> String {
+        acc.accountName.isEmpty ? acc.username : acc.accountName
     }
 }

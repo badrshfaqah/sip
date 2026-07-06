@@ -9,6 +9,18 @@ enum MainSection: String, CaseIterable, Identifiable {
     case logs     = "السجلات"
 
     var id: String { rawValue }
+
+    /// عنوان مختصر لشريط التبويبات المدمج
+    var shortTitle: String {
+        switch self {
+        case .dialpad:  return "الاتصال"
+        case .history:  return "السجل"
+        case .contacts: return "جهات"
+        case .settings: return "الإعدادات"
+        case .logs:     return "Logs"
+        }
+    }
+
     var systemImage: String {
         switch self {
         case .dialpad:  return "circle.grid.3x3.fill"
@@ -20,27 +32,20 @@ enum MainSection: String, CaseIterable, Identifiable {
     }
 }
 
-/// الواجهة الرئيسية: شريط جانبي + رأس الحالة + المحتوى
+/// الواجهة الرئيسية المدمجة: رأس الحالة + المحتوى + شريط تبويبات سفلي.
+/// مصممة لنافذة صغيرة (~380 نقطة) تعمل بجانب البرامج الأخرى.
 struct MainView: View {
     @EnvironmentObject var appState: AppState
     @State private var section: MainSection = .dialpad
 
     var body: some View {
-        NavigationSplitView {
-            List(MainSection.allCases, selection: $section) { item in
-                Label(item.rawValue, systemImage: item.systemImage)
-                    .tag(item)
-            }
-            .navigationSplitViewColumnWidth(min: 190, ideal: 210)
-            .safeAreaInset(edge: .bottom) {
-                accountSwitcher
-            }
-        } detail: {
-            VStack(spacing: 0) {
-                StatusHeaderView()
-                Divider()
-                content
-            }
+        VStack(spacing: 0) {
+            StatusHeaderView()
+            Divider()
+            content
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            Divider()
+            tabBar
         }
         .overlay {
             // شاشة المكالمة تغطي الواجهة أثناء أي مكالمة
@@ -63,44 +68,28 @@ struct MainView: View {
         }
     }
 
-    /// التبديل بين الحسابات من أسفل الشريط الجانبي
-    private var accountSwitcher: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Divider()
-            if appState.accountStore.accounts.count > 1 {
-                Menu {
-                    ForEach(appState.accountStore.accounts) { account in
-                        Button {
-                            appState.switchTo(account: account)
-                        } label: {
-                            if account.id == appState.accountStore.activeAccountID {
-                                Label(accountTitle(account), systemImage: "checkmark")
-                            } else {
-                                Text(accountTitle(account))
-                            }
-                        }
-                    }
-                    Divider()
-                    Button("إضافة حساب…") { appState.showLogin = true }
-                } label: {
-                    Label(accountTitle(appState.accountStore.activeAccount), systemImage: "person.crop.circle")
-                        .lineLimit(1)
-                }
-                .menuStyle(.borderlessButton)
-            } else {
+    /// شريط التبويبات السفلي المدمج
+    private var tabBar: some View {
+        HStack(spacing: 0) {
+            ForEach(MainSection.allCases) { item in
                 Button {
-                    appState.showLogin = true
+                    section = item
                 } label: {
-                    Label("إدارة الحسابات", systemImage: "person.crop.circle")
+                    VStack(spacing: 3) {
+                        Image(systemName: item.systemImage)
+                            .font(.system(size: 16, weight: .medium))
+                        Text(item.shortTitle)
+                            .font(.system(size: 9.5, weight: .medium))
+                    }
+                    .foregroundColor(section == item ? Brand.secondary : .secondary)
+                    .frame(maxWidth: .infinity)
+                    .contentShape(Rectangle())
                 }
-                .buttonStyle(.borderless)
+                .buttonStyle(.plain)
+                .help(item.rawValue)
             }
         }
-        .padding(10)
-    }
-
-    private func accountTitle(_ account: SIPAccount?) -> String {
-        guard let account else { return "بدون حساب" }
-        return account.accountName.isEmpty ? account.username : account.accountName
+        .padding(.vertical, 7)
+        .background(.bar)
     }
 }

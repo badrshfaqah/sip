@@ -1,7 +1,8 @@
 import SwiftUI
 import UniformTypeIdentifiers
 
-/// شاشة تسجيل الدخول وإعداد الحساب — تشمل جميع خيارات SIP الأساسية والمتقدمة.
+/// شاشة تسجيل الدخول وإعداد الحساب — بتصميم عمود واحد يناسب النافذة المدمجة،
+/// وتشمل جميع خيارات SIP الأساسية والمتقدمة.
 struct LoginView: View {
     @EnvironmentObject var appState: AppState
 
@@ -13,94 +14,9 @@ struct LoginView: View {
     @State private var testMessage: String?
 
     var body: some View {
-        HStack(spacing: 0) {
-            sidePanel
-            Divider()
-            formPanel
-        }
-        .background(Color(nsColor: .windowBackgroundColor))
-    }
-
-    // MARK: - اللوحة الجانبية: الشعار + الحسابات المحفوظة
-
-    private var sidePanel: some View {
-        VStack(spacing: 18) {
-            Spacer().frame(height: 20)
-            CompanyLogoView(size: 96)
-            Text("Developer SoftPhone")
-                .font(.title2.bold())
-            Text(Brand.companyName)
-                .font(.headline)
-                .foregroundColor(Brand.primary)
-
-            if !appState.accountStore.accounts.isEmpty {
-                Divider().padding(.horizontal)
-                Text("الحسابات المحفوظة")
-                    .font(.headline)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal)
-
-                List {
-                    ForEach(appState.accountStore.accounts) { saved in
-                        HStack {
-                            VStack(alignment: .leading) {
-                                Text(saved.accountName.isEmpty ? saved.username : saved.accountName)
-                                    .fontWeight(.medium)
-                                Text("\(saved.username)@\(saved.server)")
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-                            }
-                            Spacer()
-                            Button {
-                                account = saved
-                                password = appState.accountStore.password(for: saved) ?? ""
-                            } label: {
-                                Image(systemName: "square.and.pencil")
-                            }
-                            .buttonStyle(.borderless)
-                            .help("تعديل")
-                        }
-                        .contentShape(Rectangle())
-                        .onTapGesture {
-                            appState.switchTo(account: saved)
-                            if appState.accountStore.password(for: saved) != nil {
-                                appState.showLogin = false
-                            }
-                        }
-                        .contextMenu {
-                            Button("نسخ الإعدادات") { appState.accountStore.duplicate(saved) }
-                            Button("حذف", role: .destructive) { appState.accountStore.remove(saved) }
-                        }
-                    }
-                }
-                .listStyle(.inset)
-            }
-
-            Spacer()
-
-            HStack {
-                Button("استيراد الإعدادات") { importSettings() }
-                Button("تصدير الإعدادات") { exportSettings() }
-            }
-            .controlSize(.small)
-            .padding(.bottom, 16)
-        }
-        .frame(width: 280)
-    }
-
-    // MARK: - نموذج الإعداد
-
-    private var formPanel: some View {
         VStack(spacing: 0) {
-            Picker("", selection: $selectedTab) {
-                Text("الأساسيات").tag(0)
-                Text("الصوت").tag(1)
-                Text("الشبكة والمتقدم").tag(2)
-                Text("الأمان").tag(3)
-            }
-            .pickerStyle(.segmented)
-            .padding()
-
+            header
+            tabs
             ScrollView {
                 Group {
                     switch selectedTab {
@@ -110,14 +26,79 @@ struct LoginView: View {
                     default: securityForm
                     }
                 }
-                .padding(.horizontal, 24)
-                .padding(.bottom, 12)
+                .padding(.horizontal, 12)
+                .padding(.bottom, 8)
             }
-
             Divider()
             footer
         }
+        .background(Color(nsColor: .windowBackgroundColor))
     }
+
+    // MARK: - الرأس: الشعار + الحسابات المحفوظة
+
+    private var header: some View {
+        VStack(spacing: 6) {
+            CompanyLogoView(size: 54)
+                .padding(.top, 30)   // مساحة لأزرار النافذة
+            Text("Developer SoftPhone")
+                .font(.system(size: 15, weight: .bold))
+            Text(Brand.companyName)
+                .font(.system(size: 11.5, weight: .semibold))
+                .foregroundColor(Brand.secondary)
+            Text("الإصدار \(appState.appVersion)")
+                .font(.system(size: 9.5))
+                .foregroundColor(.secondary)
+
+            if !appState.accountStore.accounts.isEmpty {
+                Menu {
+                    ForEach(appState.accountStore.accounts) { saved in
+                        Menu(saved.accountName.isEmpty ? saved.username : saved.accountName) {
+                            Button("اتصال بهذا الحساب") {
+                                appState.switchTo(account: saved)
+                                if appState.accountStore.password(for: saved) != nil {
+                                    appState.showLogin = false
+                                }
+                            }
+                            Button("تعديل") {
+                                account = saved
+                                password = appState.accountStore.password(for: saved) ?? ""
+                            }
+                            Button("نسخ الإعدادات") { appState.accountStore.duplicate(saved) }
+                            Button("حذف", role: .destructive) { appState.accountStore.remove(saved) }
+                        }
+                    }
+                    Divider()
+                    Button("استيراد الإعدادات…") { importSettings() }
+                    Button("تصدير الإعدادات…") { exportSettings() }
+                } label: {
+                    Label("الحسابات المحفوظة (\(appState.accountStore.accounts.count))",
+                          systemImage: "person.crop.circle")
+                        .font(.system(size: 11.5))
+                }
+                .menuStyle(.borderlessButton)
+                .fixedSize()
+                .padding(.top, 2)
+            }
+        }
+        .padding(.bottom, 8)
+        .frame(maxWidth: .infinity)
+    }
+
+    private var tabs: some View {
+        Picker("", selection: $selectedTab) {
+            Text("الأساسيات").tag(0)
+            Text("الصوت").tag(1)
+            Text("الشبكة").tag(2)
+            Text("الأمان").tag(3)
+        }
+        .pickerStyle(.segmented)
+        .labelsHidden()
+        .padding(.horizontal, 12)
+        .padding(.bottom, 6)
+    }
+
+    // MARK: - النماذج
 
     private var basicsForm: some View {
         Form {
@@ -125,7 +106,7 @@ struct LoginView: View {
                 TextField("اسم الحساب", text: $account.accountName)
                 TextField("اسم المستخدم (Username)", text: $account.username)
                 SecureField("كلمة المرور", text: $password)
-                Toggle("حفظ كلمة المرور (تُخزَّن مشفّرة في Keychain)", isOn: $account.savePassword)
+                Toggle("حفظ كلمة المرور (Keychain)", isOn: $account.savePassword)
                 TextField("عنوان السيرفر أو IP", text: $account.server)
                 TextField("المنفذ (Port)", value: $account.port, format: .number.grouping(.never))
             } header: {
@@ -149,6 +130,7 @@ struct LoginView: View {
             }
         }
         .formStyle(.grouped)
+        .scrollDisabled(true)
     }
 
     private var audioForm: some View {
@@ -164,10 +146,10 @@ struct LoginView: View {
                 Toggle("تقليل الضوضاء (Noise Suppression)", isOn: $account.noiseSuppression)
                 Toggle("كشف النشاط الصوتي (VAD)", isOn: $account.voiceActivityDetection)
                 HStack {
-                    Text("Jitter Buffer (ملّي ثانية)")
+                    Text("Jitter Buffer (ms)")
                     Spacer()
                     TextField("", value: $account.jitterBufferMs, format: .number)
-                        .frame(width: 80)
+                        .frame(width: 60)
                     Stepper("", value: $account.jitterBufferMs, in: 0...500, step: 10)
                         .labelsHidden()
                 }
@@ -176,20 +158,21 @@ struct LoginView: View {
             }
         }
         .formStyle(.grouped)
+        .scrollDisabled(true)
     }
 
     private var advancedForm: some View {
         Form {
             Section {
                 HStack {
-                    Text("زمن التسجيل (Registration Expiry)")
+                    Text("زمن التسجيل (Expiry)")
                     Spacer()
                     TextField("", value: $account.registrationExpirySeconds, format: .number.grouping(.never))
-                        .frame(width: 90)
+                        .frame(width: 70)
                     Text("ثانية").foregroundColor(.secondary)
                 }
                 Toggle("Keep Alive", isOn: $account.keepAliveEnabled)
-                Picker("اجتياز NAT (NAT Traversal)", selection: $account.natTraversal) {
+                Picker("اجتياز NAT", selection: $account.natTraversal) {
                     ForEach(NATTraversalMode.allCases) { n in Text(n.displayName).tag(n) }
                 }
                 TextField("خادم STUN", text: $account.stunServer)
@@ -215,6 +198,7 @@ struct LoginView: View {
             }
         }
         .formStyle(.grouped)
+        .scrollDisabled(true)
     }
 
     private var securityForm: some View {
@@ -226,7 +210,7 @@ struct LoginView: View {
                 Toggle("تفعيل SSL/TLS", isOn: $account.sslEnabled)
                 Toggle("التحقق من شهادة الخادم", isOn: $account.tlsVerifyCertificate)
                 HStack {
-                    TextField("شهادة Certificate (مسار الملف)", text: $account.certificatePath)
+                    TextField("شهادة Certificate", text: $account.certificatePath)
                     Button("اختيار…") { pickCertificate() }
                 }
             } header: {
@@ -238,6 +222,7 @@ struct LoginView: View {
             }
         }
         .formStyle(.grouped)
+        .scrollDisabled(true)
     }
 
     // MARK: - الشريط السفلي
@@ -246,19 +231,19 @@ struct LoginView: View {
         VStack(spacing: 8) {
             if let testMessage {
                 Text(testMessage)
-                    .font(.callout)
+                    .font(.caption)
                     .foregroundColor(.secondary)
             }
             switch appState.sip.registrationStatus {
             case .failed(let error):
-                Text(error).font(.callout).foregroundColor(Brand.danger)
+                Text(error).font(.caption).foregroundColor(Brand.danger).lineLimit(2)
             case .registering:
                 ProgressView().controlSize(.small)
             default:
                 EmptyView()
             }
 
-            HStack(spacing: 12) {
+            HStack(spacing: 8) {
                 Button("اختبار الاتصال") {
                     testMessage = "جاري اختبار الاتصال…"
                     appState.sip.testConnection(account: account, password: password)
@@ -269,20 +254,21 @@ struct LoginView: View {
                     account = SIPAccount()
                     password = ""
                 }
-
                 Spacer()
-
-                Button {
-                    saveAndConnect()
-                } label: {
-                    Text("حفظ واتصال").frame(minWidth: 110)
-                }
-                .brandButtonStyle()
-                .buttonStyle(.plain)
-                .disabled(!account.isValid || password.isEmpty)
             }
+            .controlSize(.small)
+
+            Button {
+                saveAndConnect()
+            } label: {
+                Text("حفظ واتصال")
+                    .frame(maxWidth: .infinity)
+            }
+            .brandButtonStyle()
+            .buttonStyle(.plain)
+            .disabled(!account.isValid || password.isEmpty)
         }
-        .padding()
+        .padding(12)
         .onChange(of: appState.sip.registrationStatus) { status in
             if case .registered = status { testMessage = "نجح الاتصال بالخادم ✓" }
         }

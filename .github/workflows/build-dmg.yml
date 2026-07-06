@@ -1,0 +1,111 @@
+name: Build DMG
+
+on:
+  push:
+    branches:
+      - claude/developer-softphone-macos-34zkbw
+      - main
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build macOS app (Universal DMG)
+    runs-on: macos-15
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate Xcode project
+        run: xcodegen generate
+
+      - name: Resolve Swift packages
+        run: |
+          xcodebuild -resolvePackageDependencies \
+            -project DeveloperSoftPhone.xcodeproj \
+            -scheme DeveloperSoftPhone
+
+      - name: Build (Release, unsigned)
+        run: |
+          set -o pipefail
+          xcodebuild build \
+            -project DeveloperSoftPhone.xcodeproj \
+            -scheme DeveloperSoftPhone \
+            -configuration Release \
+            -derivedDataPath build \
+            -destination "generic/platform=macOS" \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGN_IDENTITY="" \
+            DEVELOPMENT_TEAM="" \
+            | tee xcodebuild.log | xcbeautify --renderer github-actions || (tail -100 xcodebuild.log; exit 1)
+
+      - name: Ad-hoc sign app
+        run: |
+          APP="$(find build/Build/Products/Release -maxdepth 1 -name '*.app' | head -1)"
+          echo "APP=$APP" >> "$GITHUB_ENV"
+          codesign --force --deep --sign - "$APP"
+          codesign --verify --deep "$APP" && echo "ad-hoc signature OK"
+
+      - name: Create DMG
+        run: |
+          mkdir -p dist staging
+          cp -R "$APP" staging/
+          ln -s /Applications staging/Applications
+          hdiutil create -volname "Developer SoftPhone" \
+            -srcfolder staging -ov -format UDZO \
+            dist/DeveloperSoftPhone.dmg
+          ls -lh dist/
+
+      - name: Upload DMG artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: DeveloperSoftPhone-dmg
+          path: dist/DeveloperSoftPhone.dmg
+          if-no-files-found: error
+
+      - name: Publish test release (branch builds)
+        if: startsWith(github.ref, 'refs/heads/')
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: test-build
+          name: "نسخة تجريبية — Developer SoftPhone"
+          body: |
+            نسخة تجريبية غير موقّعة للاختبار الداخلي (آخر بناء من الفرع).
+
+            **طريقة التشغيل بعد التنزيل** (لأن النسخة غير موقّعة بشهادة مطوّر):
+            1. افتح ملف DMG واسحب التطبيق إلى Applications.
+            2. عند أول تشغيل: انقر بزر الفأرة الأيمن على التطبيق ثم "فتح" ثم "فتح" مرة أخرى.
+            3. أو نفّذ في Terminal: `xattr -dr com.apple.quarantine "/Applications/DeveloperSoftPhone.app"`
+          prerelease: true
+          files: dist/DeveloperSoftPhone.dmg
+
+      - name: Publish versioned release (tags)
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: "Developer SoftPhone ${{ github.ref_name }}"
+          body: |
+            إصدار Developer SoftPhone ${{ github.ref_name }} — تطبيق SoftPhone عربي لنظام macOS.
+
+            **طريقة التثبيت:**
+            1. نزّل ملف DMG وافتحه واسحب التطبيق إلى Applications.
+            2. عند أول تشغيل: انقر بزر الفأرة الأيمن على التطبيق ثم "فتح" ثم "فتح" مرة أخرى
+               (النسخة غير موقّعة بشهادة مطوّر Apple بعد).
+          files: dist/DeveloperSoftPhone.dmg
+
+      - name: Upload build log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: xcodebuild-log
+          path: xcodebuild.log
+          if-no-files-found: ignore

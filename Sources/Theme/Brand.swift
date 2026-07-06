@@ -1,11 +1,11 @@
 import SwiftUI
 
-/// هوية الشركة البصرية — عدّل هذه القيم لتطابق ألوان شعار الشركة.
+/// هوية شركة "المطورين Developers" — رمادي داكن + أحمر من الشعار.
 enum Brand {
-    /// اللون الأساسي للهوية
-    static let primary = Color(red: 0.05, green: 0.35, blue: 0.65)
-    /// اللون الثانوي
-    static let secondary = Color(red: 0.95, green: 0.65, blue: 0.15)
+    /// اللون الأساسي: الرمادي الداكن (لون الشعار)
+    static let primary = Color(red: 0.23, green: 0.23, blue: 0.24)      // #3A3A3D
+    /// اللون الثانوي: الأحمر (سهم الشعار والنص العربي)
+    static let secondary = Color(red: 0.93, green: 0.26, blue: 0.20)    // #ED4233
     /// لون النجاح (متصل)
     static let success = Color.green
     /// لون الخطأ
@@ -13,11 +13,11 @@ enum Brand {
     /// لون التحذير (جاري التسجيل)
     static let warning = Color.orange
 
-    /// اسم صورة الشعار داخل Assets — استبدل الملف بشعار الشركة
+    /// اسم صورة الشعار داخل Assets — ضع شعار الشركة (PNG) في CompanyLogo.imageset
     static let logoAssetName = "CompanyLogo"
 
     /// اسم الشركة الظاهر في الواجهة
-    static let companyName = "Badr"
+    static let companyName = "المطورين Developers"
 }
 
 extension View {
@@ -47,13 +47,14 @@ struct CompanyLogoView: View {
                 .scaledToFit()
                 .frame(width: size, height: size)
         } else {
+            // بديل مؤقت بألوان الشعار (رمادي داكن + أحمر) حتى تُضاف صورة الشعار
             ZStack {
                 RoundedRectangle(cornerRadius: size / 4.5, style: .continuous)
-                    .fill(LinearGradient(colors: [Brand.primary, Brand.primary.opacity(0.7)],
+                    .fill(LinearGradient(colors: [Brand.primary, Brand.primary.opacity(0.82)],
                                          startPoint: .topLeading, endPoint: .bottomTrailing))
                 Image(systemName: "phone.fill")
                     .font(.system(size: size / 2.2, weight: .semibold))
-                    .foregroundColor(.white)
+                    .foregroundColor(Brand.secondary)
             }
             .frame(width: size, height: size)
         }
