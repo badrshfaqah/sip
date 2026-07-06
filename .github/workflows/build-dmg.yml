@@ -34,10 +34,13 @@ jobs:
 
       - name: Resolve Swift packages (with retries)
         run: |
-          for i in 1 2 3 4; do
+          # نفس derivedDataPath المستخدم في خطوة البناء حتى لا تُعاد
+          # عملية التنزيل خارج حماية إعادة المحاولة
+          for i in 1 2 3 4 5; do
             if xcodebuild -resolvePackageDependencies \
               -project DeveloperSoftPhone.xcodeproj \
-              -scheme DeveloperSoftPhone; then
+              -scheme DeveloperSoftPhone \
+              -derivedDataPath build; then
               exit 0
             fi
             echo "Package resolution failed (attempt $i) — retrying in 20s…"
