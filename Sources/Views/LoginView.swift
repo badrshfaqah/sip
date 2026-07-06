@@ -46,6 +46,9 @@ struct LoginView: View {
             Text(Brand.companyName)
                 .font(.system(size: 11.5, weight: .semibold))
                 .foregroundColor(Brand.secondary)
+            Text("الإصدار \(appState.appVersion)")
+                .font(.system(size: 9.5))
+                .foregroundColor(.secondary)
 
             if !appState.accountStore.accounts.isEmpty {
                 Menu {

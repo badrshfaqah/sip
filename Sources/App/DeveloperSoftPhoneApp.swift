@@ -42,6 +42,7 @@ struct MenuBarContent: View {
 
     var body: some View {
         Text(appState.sip.registrationStatus.displayName)
+        Text("الإصدار \(appState.appVersion)")
         Divider()
         Button("إظهار النافذة") {
             NSApp.activate(ignoringOtherApps: true)
